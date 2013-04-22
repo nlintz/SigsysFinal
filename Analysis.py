@@ -45,13 +45,25 @@ class SongAnalyzer(object):
         freqs = freqs[range(n/2)]  # only plot the positive frequencies
         return [freqs, abs(FFT)]
 
-    def plotSpectrogram(self):
-        Pxx, freqs, bins, im = pylab.specgram(self.data, Fs=self.samplingRate)
-        pylab.show()
+    def plotSpectrogram(self, tempo=120):
+        NFFT = int(8.0 * self.samplingRate / float(tempo))
+        noverlap = NFFT >> 2
+        if (len(self.data.shape) == 2):
+            Pxx, freqs, bins, im = pylab.specgram(self.data[:, 0], NFFT=NFFT, Fs=self.samplingRate, noverlap=noverlap)
+            pylab.show()
+        else:
+            Pxx, freqs, bins, im = pylab.specgram(self.data, NFFT=NFFT, Fs=self.samplingRate, noverlap=noverlap)
+            pylab.show()
 
-    def spectrogram(self):
-        Pxx, freqs, bins, im = pylab.specgram(self.data, NFFT = 256, Fs=self.samplingRate, noverlap=128,)
-        return [Pxx, freqs]
+    def spectrogram(self, tempo=120):
+        NFFT = int(8.0 * self.samplingRate / float(tempo))
+        noverlap = NFFT >> 2
+        if (len(self.data.shape) == 2):
+            Pxx, freqs, bins, im = pylab.specgram(self.data[:, 0], NFFT=NFFT, Fs=self.samplingRate, noverlap=noverlap)
+            return [Pxx, freqs]
+        else:
+            Pxx, freqs, bins, im = pylab.specgram(self.data, NFFT=NFFT, Fs=self.samplingRate, noverlap=noverlap)
+            return [Pxx, freqs]
 
     def changeSong(self, songPath):
         self.__init__(songPath)
