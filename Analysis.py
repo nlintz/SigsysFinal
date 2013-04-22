@@ -45,6 +45,23 @@ class SongAnalyzer(object):
         freqs = freqs[range(n/2)]  # only plot the positive frequencies
         return [freqs, abs(FFT)]
 
+    def plotFFTDownSample(self, downsamplingPercent):
+        """
+        downsamplingPercent = percent of samples you want ie 10 = 10%
+        """
+        inputSignal = self.data
+        samplingRate = self.samplingRate
+        n = len(inputSignal)  # length of the signal
+        FFT = abs(fft(inputSignal))/n  # fft computing and normalization
+        FFT = FFT[range(n/2)]  # we only want the positive signals, fft returns the positive and negative frequencies
+        freqs = scipy.fftpack.fftfreq(inputSignal.size, 1.0/samplingRate)
+        freqs = freqs[range(n/2)]  # only plot the positive frequencies
+
+        plot(freqs[::downsamplingPercent], abs(FFT)[::downsamplingPercent], 'r')  # plotting the spectrum
+        xlabel('Freq (Hz)')
+        ylabel('|Y(freq)|')
+        show()
+
     def plotSpectrogram(self, tempo=120):
         NFFT = int(8.0 * self.samplingRate / float(tempo))
         noverlap = NFFT >> 2
@@ -60,18 +77,10 @@ class SongAnalyzer(object):
         noverlap = NFFT >> 2
         if (len(self.data.shape) == 2):
             Pxx, freqs, bins, im = pylab.specgram(self.data[:, 0], NFFT=NFFT, Fs=self.samplingRate, noverlap=noverlap)
-            return [Pxx, freqs]
+            return [Pxx, freqs, bins]
         else:
             Pxx, freqs, bins, im = pylab.specgram(self.data, NFFT=NFFT, Fs=self.samplingRate, noverlap=noverlap)
-            return [Pxx, freqs]
+            return [Pxx, freqs, bins]
 
     def changeSong(self, songPath):
         self.__init__(songPath)
-
-
-def main():
-    S = SongAnalyzer('./samples/nohands.wav')
-    S.plotSpectrogram()
-
-if __name__ == "__main__":
-    main()
