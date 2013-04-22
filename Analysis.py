@@ -47,7 +47,7 @@ class SongAnalyzer(object):
 
     def plotFFTDownSample(self, downsamplingPercent):
         """
-        downsamplingPercent = percent of samples you want ie 10 = 10%
+        downsamplingPercent = percent of samples you want ie 10 = every 10th sample
         """
         inputSignal = self.data
         samplingRate = self.samplingRate
