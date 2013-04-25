@@ -174,6 +174,7 @@ class SongModifier(SongAnalyzer):
         SongAnalyzer.__init__(self, songPath)
 
     def lowPassFFT(self, inputSignal, cutoff):  # input signal needs to be an array like [freqs, amplitudes]
+        cutoff = cutoff/2.0
         freqs = inputSignal[0]
         amplitudes = inputSignal[1]
         for i in range(len(amplitudes)):
@@ -182,11 +183,34 @@ class SongModifier(SongAnalyzer):
         return amplitudes
 
     def highPassFFT(self, inputSignal, cutoff):  # input signal needs to be an array like [freqs, amplitudes]
+        cutoff = cutoff/2.0
         freqs = inputSignal[0]
         amplitudes = inputSignal[1]
         for i in range(len(amplitudes)):
             if freqs[i] < cutoff:
                 amplitudes[i] = 0
+        return amplitudes
+
+    def bandStopFFT(self, inputSignal, lowCutoff, highCutoff):  # input signal needs to be an array like [freqs, amplitudes]
+        lowCutoff = lowCutoff/2.0
+        highCutoff = highCutoff/2.0
+        freqs = inputSignal[0]
+        amplitudes = inputSignal[1]
+        for i in range(len(amplitudes)):
+            if freqs[i] < highCutoff and freqs[i] > lowCutoff:
+                amplitudes[i] = 0
+        return amplitudes
+
+    def bandPassFFT(self, inputSignal, lowCutoff, highCutoff):
+        freqs = inputSignal[0]
+        lowPassedSignal = [freqs, self.lowPassFFT(inputSignal, lowCutoff)]
+        highPassedAmplitudes = self.highPassFFT(lowPassedSignal, highCutoff)
+        return highPassedAmplitudes
+
+    def magnify(self, inputSignal, factor):
+        amplitudes = inputSignal[1]
+        for i in range(len(amplitudes)):
+            amplitudes[i] = amplitudes[i]*factor
         return amplitudes
 
     def writeWAV(self, inputSignal, filename):
@@ -199,4 +223,3 @@ class SongModifier(SongAnalyzer):
             f = Sndfile(filename, 'w', format, 1, self.samplingRate)
             f.write_frames(inputSignal)
             f.close()
-

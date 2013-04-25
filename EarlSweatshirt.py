@@ -61,21 +61,58 @@ def testPlotLPF(start=30, stop=31, cutoff=100):
     lpf = S.lowPassFFT(FFT, cutoff)
     IFFT = S.inverseRealFFT(lpf)
     inputSignal = IFFT
-    S.plotSpectrogram(inputSignal)
+    S.plotPartialSpectrogram(0, 10, inputSignal=inputSignal)
 
 
 def testPlotHPF(start=30, stop=31, cutoff=5000):
     S = SongModifier('./samples/nohands.wav')
     FFT = S.partialRealFFT(start, stop)
-    lpf = S.highPassFFT(FFT, cutoff)
-    IFFT = S.inverseRealFFT(lpf)
+    hpf = S.highPassFFT(FFT, cutoff)
+    IFFT = S.inverseRealFFT(hpf)
     inputSignal = IFFT
-    S.plotFFT(inputSignal)
+    S.plotPartialSpectrogram(0, 10, inputSignal=inputSignal)
+
+
+def testBandPass(start=30, stop=31, lowCutoff=1100, highCutoff=80):
+    S = SongModifier('./samples/nohands.wav')
+    FFT = S.partialRealFFT(start, stop)
+    bpf = S.bandPassFFT(FFT, lowCutoff, highCutoff)
+    IFFT = S.inverseRealFFT(bpf)
+    inputSignal = IFFT
+    S.plotPartialSpectrogram(0, 10, inputSignal=inputSignal)
+
+
+def testBandStop(start=30, stop=31, lowCutoff=1100, highCutoff=80):
+    S = SongModifier('./samples/nohands.wav')
+    FFT = S.partialRealFFT(start, stop)
+    bsf = S.bandStopFFT(FFT, lowCutoff, highCutoff)
+    IFFT = S.inverseRealFFT(bsf)
+    inputSignal = IFFT
+    S.plotPartialSpectrogram(0, 10, inputSignal=inputSignal)
+
+
+def testBandPassWAV(start=30, stop=31, lowCutoff=16000, highCutoff=10000):
+    S = SongModifier('./samples/nohands.wav')
+    FFT = S.partialRealFFT(start, stop)
+    bpf = S.bandPassFFT(FFT, lowCutoff, highCutoff)
+    IFFT = S.inverseRealFFT(bpf)
+    inputSignal = IFFT
+    S.writeWAV(inputSignal, './processed/wavbandPassTest.wav')
+
+
+def testBandStopWAV(start=30, stop=31, lowCutoff=10000, highCutoff=16000):
+    S = SongModifier('./samples/nohands.wav')
+    FFT = S.partialRealFFT(start, stop)
+    bsf = S.bandStopFFT(FFT, lowCutoff, highCutoff)
+    IFFT = S.inverseRealFFT(bsf)
+    inputSignal = IFFT
+    S.writeWAV(inputSignal, './processed/wavbandStopTest.wav')
 
 
 def main():
-    # testPlotLPF()
-    test_partial_spectrum()
+    # testBandStop(start=30, stop=40, lowCutoff=125, highCutoff=1000)
+    testBandStopWAV(start=30, stop=40, lowCutoff=125, highCutoff=1000)
+
 
 if __name__ == "__main__":
     main()
