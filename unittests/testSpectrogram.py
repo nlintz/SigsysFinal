@@ -37,12 +37,19 @@ def test_partial_fft():
 
 
 def test_wavwrite():
-    S = SongModifier('./samples/a440.wav')
-    S.writeWAV(S.data, './processed/a440.wav')
+    S = SongModifier('./samples/nohands.wav')
+    S.writeWAV(S.data, './processed/nohands.wav')
+
+
+def test_writeInverseFFT():
+    S = SongModifier('./samples/nohands.wav')
+    FFT = S.partialRealFFT(0, 10)[1]
+    IFFT = S.inverseRealFFT(FFT)
+    S.writeWAV(IFFT, './processed/nohandsTEST.wav')
 
 
 def main():
-    test_wavwrite()
+    test_writeInverseFFT()
 
 if __name__ == "__main__":
     main()

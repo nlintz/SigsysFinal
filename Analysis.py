@@ -4,6 +4,7 @@ import scipy.fftpack
 import pylab
 import analyzeWAV
 from scikits.audiolab import Format, Sndfile
+import numpy
 
 
 class SongAnalyzer(object):
@@ -39,24 +40,34 @@ class SongAnalyzer(object):
     def FFT(self):
         inputSignal = self.data
         samplingRate = self.samplingRate
-        n = len(inputSignal)  # length of the signal
-        FFT = abs(fft(inputSignal))/n  # fft computing and normalization
-        FFT = FFT[range(n/2)]  # we only want the positive signals, fft returns the positive and negative frequencies
+        FFT = numpy.fft.fft(inputSignal)  # fft computing and normalization
         freqs = scipy.fftpack.fftfreq(inputSignal.size, 1.0/samplingRate)
-        freqs = freqs[range(n/2)]  # only plot the positive frequencies
-        return [freqs, abs(FFT)]
+        return [freqs, FFT]
 
     def partialFFT(self, timeStart, timeEnd):
         startIndex = timeStart * self.samplingRate
         stopIndex = timeEnd * self.samplingRate
         samplingRate = self.samplingRate
         inputSignal = self.data[startIndex:stopIndex]
-        n = len(inputSignal)  # length of the signal
-        FFT = abs(fft(inputSignal))/n  # fft computing and normalization
-        FFT = FFT[range(n/2)]  # we only want the positive signals, fft returns the positive and negative frequencies
+        FFT = numpy.fft.fft(inputSignal, axis=0)  # fft computing and normalization
         freqs = scipy.fftpack.fftfreq(inputSignal.size, 1.0/samplingRate)
-        freqs = freqs[range(n/2)]  # only plot the positive frequencies
-        return [freqs, abs(FFT)]
+        return [freqs, FFT]
+
+    def realFFT(self):
+        inputSignal = self.data
+        samplingRate = self.samplingRate
+        FFT = numpy.fft.rfft(inputSignal, axis=0)
+        freqs = scipy.fftpack.fftfreq(inputSignal.size, 1.0/samplingRate)
+        return [freqs, FFT]
+
+    def partialRealFFT(self, timeStart, timeEnd):
+        startIndex = timeStart * self.samplingRate
+        stopIndex = timeEnd * self.samplingRate
+        samplingRate = self.samplingRate
+        inputSignal = self.data[startIndex:stopIndex]
+        FFT = numpy.fft.rfft(inputSignal, axis=0)  # fft computing and normalization
+        freqs = scipy.fftpack.fftfreq(inputSignal.size, 1.0/samplingRate)
+        return [freqs, FFT]
 
     def plotPartialFFT(self, timeStart, timeEnd):
         """
@@ -97,7 +108,10 @@ class SongAnalyzer(object):
         show()
 
     def inverseFFT(self, FFT):
-        return ifft(FFT, axis=0)
+        return numpy.fft.ifft(FFT, axis=0)
+
+    def inverseRealFFT(self, FFT):
+        return numpy.fft.irfft(FFT, axis=0)
 
     def plotSpectrogram(self, tempo=120):
         NFFT = int(8.0 * self.samplingRate / float(tempo))
@@ -150,7 +164,7 @@ class SongModifier(SongAnalyzer):
 
     def writeWAV(self, inputSignal, filename):
         format = Format('wav')
-        if (len(self.data.shape) == 2):
+        if (len(inputSignal.shape) == 2):
             f = Sndfile(filename, 'w', format, 2, self.samplingRate)
             f.write_frames(inputSignal)
             f.close()
