@@ -1,8 +1,10 @@
 from pylab import plot, show, xlabel, ylabel
-from scipy import fft
+from scipy import fft, ifft
 import scipy.fftpack
 import pylab
 import analyzeWAV
+from scikits.audiolab import Format, Sndfile
+import numpy
 
 
 class SongAnalyzer(object):
@@ -38,12 +40,78 @@ class SongAnalyzer(object):
     def FFT(self):
         inputSignal = self.data
         samplingRate = self.samplingRate
+        FFT = numpy.fft.fft(inputSignal)  # fft computing and normalization
+        freqs = scipy.fftpack.fftfreq(inputSignal.size, 1.0/samplingRate)
+        return [freqs, FFT]
+
+    def partialFFT(self, timeStart, timeEnd):
+        startIndex = timeStart * self.samplingRate
+        stopIndex = timeEnd * self.samplingRate
+        samplingRate = self.samplingRate
+        inputSignal = self.data[startIndex:stopIndex]
+        FFT = numpy.fft.fft(inputSignal, axis=0)  # fft computing and normalization
+        freqs = scipy.fftpack.fftfreq(inputSignal.size, 1.0/samplingRate)
+        return [freqs, FFT]
+
+    def realFFT(self):
+        inputSignal = self.data
+        samplingRate = self.samplingRate
+        FFT = numpy.fft.rfft(inputSignal, axis=0)
+        freqs = scipy.fftpack.fftfreq(inputSignal.size, 1.0/samplingRate)
+        return [freqs, FFT]
+
+    def partialRealFFT(self, timeStart, timeEnd):
+        startIndex = timeStart * self.samplingRate
+        stopIndex = timeEnd * self.samplingRate
+        samplingRate = self.samplingRate
+        inputSignal = self.data[startIndex:stopIndex]
+        FFT = numpy.fft.rfft(inputSignal, axis=0)  # fft computing and normalization
+        freqs = scipy.fftpack.fftfreq(inputSignal.size, 1.0/samplingRate)
+        return [freqs, FFT]
+
+    def plotPartialFFT(self, timeStart, timeEnd):
+        """
+        plots the fft of an array
+        inputSignal = numpy array
+        samplingRate = sampling frequency for FFT
+        """
+        startIndex = timeStart * self.samplingRate
+        stopIndex = timeEnd * self.samplingRate
+        samplingRate = self.samplingRate
+        inputSignal = self.data[startIndex:stopIndex]
         n = len(inputSignal)  # length of the signal
         FFT = abs(fft(inputSignal))/n  # fft computing and normalization
         FFT = FFT[range(n/2)]  # we only want the positive signals, fft returns the positive and negative frequencies
         freqs = scipy.fftpack.fftfreq(inputSignal.size, 1.0/samplingRate)
         freqs = freqs[range(n/2)]  # only plot the positive frequencies
-        return [freqs, abs(FFT)]
+
+        plot(freqs, abs(FFT), 'r')  # plotting the spectrum
+        xlabel('Freq (Hz)')
+        ylabel('|Y(freq)|')
+        show()
+
+    def plotFFTDownSample(self, downsamplingPercent):
+        """
+        downsamplingPercent = percent of samples you want ie 10 = every 10th sample
+        """
+        inputSignal = self.data
+        samplingRate = self.samplingRate
+        n = len(inputSignal)  # length of the signal
+        FFT = abs(fft(inputSignal))/n  # fft computing and normalization
+        FFT = FFT[range(n/2)]  # we only want the positive signals, fft returns the positive and negative frequencies
+        freqs = scipy.fftpack.fftfreq(inputSignal.size, 1.0/samplingRate)
+        freqs = freqs[range(n/2)]  # only plot the positive frequencies
+
+        plot(freqs[::downsamplingPercent], abs(FFT)[::downsamplingPercent], 'r')  # plotting the spectrum
+        xlabel('Freq (Hz)')
+        ylabel('|Y(freq)|')
+        show()
+
+    def inverseFFT(self, FFT):
+        return numpy.fft.ifft(FFT, axis=0)
+
+    def inverseRealFFT(self, FFT):
+        return numpy.fft.irfft(FFT, axis=0)
 
     def plotSpectrogram(self, tempo=120):
         NFFT = int(8.0 * self.samplingRate / float(tempo))
@@ -60,18 +128,48 @@ class SongAnalyzer(object):
         noverlap = NFFT >> 2
         if (len(self.data.shape) == 2):
             Pxx, freqs, bins, im = pylab.specgram(self.data[:, 0], NFFT=NFFT, Fs=self.samplingRate, noverlap=noverlap)
-            return [Pxx, freqs]
+            return [Pxx, freqs, bins]
         else:
             Pxx, freqs, bins, im = pylab.specgram(self.data, NFFT=NFFT, Fs=self.samplingRate, noverlap=noverlap)
-            return [Pxx, freqs]
+            return [Pxx, freqs, bins]
+
+    def partialSpectrogram(self, timeStart, timeEnd, tempo=120):
+        startIndex = timeStart * self.samplingRate
+        stopIndex = timeEnd * self.samplingRate
+        spect = self.spectrogram()
+        Pxx = spect[0][startIndex:stopIndex]
+        freqs = spect[0][startIndex:stopIndex]
+        bins = spect[0][startIndex:stopIndex]
+        return [Pxx, freqs, bins]
+
+    def plotPartialSpectrogram(self, timeStart, timeEnd, tempo=120):
+        startIndex = timeStart * self.samplingRate
+        stopIndex = timeEnd * self.samplingRate
+        NFFT = int(8.0 * self.samplingRate / float(tempo))
+        noverlap = NFFT >> 2
+        if (len(self.data.shape) == 2):
+            Pxx, freqs, bins, im = pylab.specgram(self.data[startIndex:stopIndex, 0], NFFT=NFFT, Fs=self.samplingRate, noverlap=noverlap)
+            pylab.show()
+        else:
+            Pxx, freqs, bins, im = pylab.specgram(self.data[startIndex:stopIndex], NFFT=NFFT, Fs=self.samplingRate, noverlap=noverlap)
+            pylab.show()
 
     def changeSong(self, songPath):
         self.__init__(songPath)
 
 
-def main():
-    S = SongAnalyzer('./samples/nohands.wav')
-    S.plotSpectrogram()
+class SongModifier(SongAnalyzer):
+    def __init__(self, songPath):
+        SongAnalyzer.__init__(self, songPath)
 
-if __name__ == "__main__":
-    main()
+    def writeWAV(self, inputSignal, filename):
+        format = Format('wav')
+        if (len(inputSignal.shape) == 2):
+            f = Sndfile(filename, 'w', format, 2, self.samplingRate)
+            f.write_frames(inputSignal)
+            f.close()
+        else:
+            f = Sndfile(filename, 'w', format, 1, self.samplingRate)
+            f.write_frames(inputSignal)
+            f.close()
+
