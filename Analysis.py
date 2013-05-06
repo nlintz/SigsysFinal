@@ -4,6 +4,7 @@ import scipy.fftpack
 import pylab
 import analyzeWAV
 from scikits.audiolab import Format, Sndfile
+from scipy.io.wavfile import read, write
 import numpy
 
 
@@ -67,7 +68,14 @@ class SongAnalyzer(object):
         samplingRate = self.samplingRate
         inputSignal = self.data[startIndex:stopIndex]
         amplitudes = numpy.fft.rfft(inputSignal, axis=0)  # fft computing and normalization
-        freqs = scipy.fftpack.fftfreq(inputSignal.size, 1.0/samplingRate)
+        freqs = scipy.fftpack.fftfreq(inputSignal.size, 0.5/samplingRate)
+        return [freqs, amplitudes]
+
+    def processedFFT(self, inputSignal):
+        freqs = inputSignal[0]
+        amplitudes = inputSignal[1]
+        for i in range(len(amplitudes)):
+            amplitudes[i] = 0
         return [freqs, amplitudes]
 
     def plotPartialFFT(self, timeStart, timeEnd, inputSignal=None):
@@ -110,10 +118,14 @@ class SongAnalyzer(object):
         ylabel('|Y(freq)|')
         show()
 
-    def inverseFFT(self, amplitudes):
-        return numpy.fft.ifft(amplitudes, axis=0)
+    def inverseFFT(self, inputSignal):
+        freqs = inputSignal[0]
+        amplitudes = inputSignal[1]
+        return [freqs, numpy.fft.ifft(amplitudes, axis=0)]
 
-    def inverseRealFFT(self, amplitudes):
+    def inverseRealFFT(self, inputSignal):
+        freqs = inputSignal[0]
+        amplitudes = inputSignal[1]
         return numpy.fft.irfft(amplitudes, axis=0)
 
     def plotSpectrogram(self, inputSignal=None, tempo=120):
@@ -180,7 +192,7 @@ class SongModifier(SongAnalyzer):
         for i in range(len(amplitudes)):
             if freqs[i] > cutoff:
                 amplitudes[i] = 0
-        return amplitudes
+        return [freqs, amplitudes]
 
     def highPassFFT(self, inputSignal, cutoff):  # input signal needs to be an array like [freqs, amplitudes]
         cutoff = cutoff/2.0
@@ -189,7 +201,7 @@ class SongModifier(SongAnalyzer):
         for i in range(len(amplitudes)):
             if freqs[i] < cutoff:
                 amplitudes[i] = 0
-        return amplitudes
+        return [freqs, amplitudes]
 
     def bandStopFFT(self, inputSignal, lowCutoff, highCutoff):  # input signal needs to be an array like [freqs, amplitudes]
         lowCutoff = lowCutoff/2.0
@@ -197,29 +209,39 @@ class SongModifier(SongAnalyzer):
         freqs = inputSignal[0]
         amplitudes = inputSignal[1]
         for i in range(len(amplitudes)):
-            if freqs[i] < highCutoff and freqs[i] > lowCutoff:
+            if freqs[i] > highCutoff and freqs[i] < lowCutoff:
                 amplitudes[i] = 0
-        return amplitudes
+        return [freqs, amplitudes]
 
     def bandPassFFT(self, inputSignal, lowCutoff, highCutoff):
         freqs = inputSignal[0]
-        lowPassedSignal = [freqs, self.lowPassFFT(inputSignal, lowCutoff)]
+        lowPassedSignal = self.lowPassFFT(inputSignal, lowCutoff)
         highPassedAmplitudes = self.highPassFFT(lowPassedSignal, highCutoff)
         return highPassedAmplitudes
 
-    def magnify(self, inputSignal, factor):
+    def bandBoostFFT(self, inputSignal, lowCutoff, highCutoff, factor):
+        lowCutoff = lowCutoff
+        highCutoff = highCutoff
+        freqs = inputSignal[0]
         amplitudes = inputSignal[1]
         for i in range(len(amplitudes)):
-            amplitudes[i] = amplitudes[i]*factor
-        return amplitudes
+            if freqs[i] > highCutoff and freqs[i] < lowCutoff:
+                amplitudes[i] = amplitudes[i]*factor
+        return [freqs, amplitudes]
 
-    def writeWAV(self, inputSignal, filename):
+    def magnify(self, inputSignal, factor):
+        freqs = inputSignal[0]
+        amplitudes = inputSignal[1]
+        processedSignal = map(lambda x: x*factor, amplitudes)
+        return [freqs, processedSignal]
+
+    def writeWAV(self, data, filename):
         format = Format('wav')
-        if (len(inputSignal.shape) == 2):
+        if (len(data.shape) == 2):
             f = Sndfile(filename, 'w', format, 2, self.samplingRate)
-            f.write_frames(inputSignal)
+            f.write_frames(data)
             f.close()
         else:
             f = Sndfile(filename, 'w', format, 1, self.samplingRate)
-            f.write_frames(inputSignal)
+            f.write_frames(data)
             f.close()

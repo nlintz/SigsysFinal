@@ -44,7 +44,7 @@ def test_writeInverseFFT(startTime, stopTime):
     S = SongModifier('./samples/nohands.wav')
     AMP = S.partialRealFFT(startTime, stopTime)[1]
     IFFT = S.inverseRealFFT(AMP)
-    S.writeWAV(IFFT, './processed/nohandsTEST.wav')
+    S.writeWAV(IFFT[1], './processed/nohandsTEST.wav')
 
 
 def testLPF():
@@ -52,7 +52,7 @@ def testLPF():
     FFT = S.partialRealFFT(10, 20)
     lpf = S.lowPassFFT(FFT, 22000)
     IFFT = S.inverseRealFFT(lpf)
-    S.writeWAV(IFFT, './processed/nofiltertest.wav')
+    S.writeWAV(IFFT[1], './processed/nofiltertest.wav')
 
 
 def testPlotLPF(start=30, stop=31, cutoff=100):
@@ -100,18 +100,29 @@ def testBandPassWAV(start=30, stop=31, lowCutoff=16000, highCutoff=10000):
     S.writeWAV(inputSignal, './processed/wavbandPassTest.wav')
 
 
-def testBandStopWAV(start=30, stop=31, lowCutoff=10000, highCutoff=16000):
+def testBandBoostWAV(start=30, stop=35, lowCutoff=16000, highCutoff=1000, factor=0):
     S = SongModifier('./samples/nohands.wav')
     FFT = S.partialRealFFT(start, stop)
+    bpf = S.bandBoostFFT(FFT, lowCutoff, highCutoff, factor)
+    IFFT = S.inverseRealFFT(bpf)
+    inputSignal = IFFT
+    S.writeWAV(inputSignal, './processed/boostTest.wav')
+
+
+def testBandStopWAV(start=30, stop=35, lowCutoff=10000, highCutoff=16000):
+    S = SongModifier('./samples/yesterday.wav')
+    FFT = S.partialRealFFT(start, stop)
     bsf = S.bandStopFFT(FFT, lowCutoff, highCutoff)
+
     IFFT = S.inverseRealFFT(bsf)
     inputSignal = IFFT
-    S.writeWAV(inputSignal, './processed/wavbandStopTest.wav')
+    S.writeWAV(inputSignal, './processed/yesterday.wav')
 
 
 def main():
+    testBandBoostWAV()
     # testBandStop(start=30, stop=40, lowCutoff=125, highCutoff=1000)
-    testBandStopWAV(start=30, stop=40, lowCutoff=125, highCutoff=1000)
+    # testBandStopWAV(start=30, stop=40, lowCutoff=125, highCutoff=1000)
 
 
 if __name__ == "__main__":
