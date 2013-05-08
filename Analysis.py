@@ -4,7 +4,6 @@ import scipy.fftpack
 import pylab
 import analyzeWAV
 from scikits.audiolab import Format, Sndfile
-from scipy.io.wavfile import read, write
 import numpy
 
 
@@ -204,8 +203,8 @@ class SongModifier(SongAnalyzer):
         return [freqs, amplitudes]
 
     def bandStopFFT(self, inputSignal, lowCutoff, highCutoff):  # input signal needs to be an array like [freqs, amplitudes]
-        lowCutoff = lowCutoff/2.0
-        highCutoff = highCutoff/2.0
+        lowCutoff = lowCutoff
+        highCutoff = highCutoff
         freqs = inputSignal[0]
         amplitudes = inputSignal[1]
         for i in range(len(amplitudes)):

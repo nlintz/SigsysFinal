@@ -3,19 +3,20 @@ import numpy
 
 
 def main(start=60, stop=90):
-    highCutoff = 600
-    lowCutoff = 5000
-    vocalBoostLowCutoff = 24000
-    vocalBoostHighCutoff = 5000
-    boostFactor = 5
+    highCutoff = 0
+    lowCutoff = 1000
+    vocalBoostLowCutoff = 20000
+    vocalBoostHighCutoff = 1000
+    boostFactor = 2
 
     yesterday = SongModifier('./samples/yesterday.wav')
     FFT = yesterday.partialRealFFT(start, stop)
     bandPassedSignal = yesterday.bandStopFFT(FFT, lowCutoff, highCutoff)
     vocalBoostSignal = yesterday.bandBoostFFT(bandPassedSignal, vocalBoostLowCutoff, vocalBoostHighCutoff, boostFactor)
     IFFT = yesterday.inverseRealFFT(vocalBoostSignal)
-    yesterday.writeWAV(FFT[1], './processed/naiveFilter.wav')
-    yesterday.plotPartialSpectrogram(0, 5, IFFT, tempo=120)
+    yesterday.writeWAV(IFFT, './processed/naiveFilter2.wav')
+    yesterday.plotPartialSpectrogram(10, 25, yesterday.data, tempo=120)
+    yesterday.plotSpectrogram(IFFT, tempo=120)
 
 if __name__ == "__main__":
-    main(10, 15)
+    main(10, 25)

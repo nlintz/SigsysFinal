@@ -100,13 +100,14 @@ def testBandPassWAV(start=30, stop=31, lowCutoff=16000, highCutoff=10000):
     S.writeWAV(inputSignal, './processed/wavbandPassTest.wav')
 
 
-def testBandBoostWAV(start=30, stop=35, lowCutoff=16000, highCutoff=1000, factor=0):
+def testBandBoostWAV(start=30, stop=35, lowCutoff=16000, highCutoff=1000, factor=10):
     S = SongModifier('./samples/nohands.wav')
     FFT = S.partialRealFFT(start, stop)
     bpf = S.bandBoostFFT(FFT, lowCutoff, highCutoff, factor)
     IFFT = S.inverseRealFFT(bpf)
     inputSignal = IFFT
-    S.writeWAV(inputSignal, './processed/boostTest.wav')
+    S.plotSpectrogram(IFFT)
+    # S.writeWAV(inputSignal, './processed/boostTest.wav')
 
 
 def testBandStopWAV(start=30, stop=35, lowCutoff=10000, highCutoff=16000):
